@@ -10,9 +10,8 @@ const PORT = process.env.PORT || 5000;
 
 // Setup
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
-    : ['http://localhost:3000']
+  origin: true, 
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.static('uploads'));
@@ -32,7 +31,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
   fileFilter: (req, file, cb) => {
+    console.log('File filter check:', file.mimetype, file.originalname);
     if (file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
@@ -64,19 +67,27 @@ app.get('/health', (req, res) => {
 
 // Upload video
 app.post('/api/recordings', upload.single('video'), (req, res) => {
+  console.log('Upload request received');
+  console.log('File:', req.file);
+  console.log('Body:', req.body);
+  
   if (!req.file) {
+    console.log('No file uploaded');
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   const { filename, path: filepath, size: filesize } = req.file;
+  console.log('File details:', { filename, filepath, filesize });
   
   db.run(
     'INSERT INTO recordings (filename, filepath, filesize) VALUES (?, ?, ?)',
     [filename, filepath, filesize],
     function(err) {
       if (err) {
-        return res.status(500).json({ error: 'Database error' });
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error: ' + err.message });
       }
+      console.log('Upload successful, ID:', this.lastID);
       res.json({ id: this.lastID, message: 'Upload successful' });
     }
   );
