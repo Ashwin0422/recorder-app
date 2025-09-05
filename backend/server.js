@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 5000;
 // Setup
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] // Replace with your frontend URL
+    ? ['https://your-frontend-domain.com'] 
     : ['http://localhost:3000']
 }));
 app.use(express.json());
